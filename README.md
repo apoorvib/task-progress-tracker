@@ -1,20 +1,22 @@
 # Task Progress Tracker
 
-A simple, offline-capable web application for tracking your daily tasks and habits. This application allows you to visually monitor your consistency with a GitHub-inspired contribution grid visualization.
+A powerful, offline-capable web application for tracking your daily tasks and habits. Track your consistency with a visual color-coded grid inspired by GitHub's contribution chart.
 
 ## Features
 
 - Add, edit, and delete tasks
 - Track task completion with a 5-level progress system (none, low, medium, high, complete)
 - View your progress on a monthly calendar grid
-- Works completely offline
-- Data stored locally in your browser
-- No account or server needed
-- Responsive design for mobile and desktop
+- Filter to view all tasks or focus on a single task
+- Visual mini-tracker shows last 7 days for each task
+- IndexedDB storage for persistent data that survives browser cache clearing
+- Built-in data export/import for manual backups
+- Works completely offline - no server required
+- Responsive design for mobile and desktop devices
 
 ## Live Demo
 
-You can try the app directly by visiting [this GitHub Pages link](#).
+You can try the app directly by visiting [GitHub Pages link](#).
 
 ## Installation
 
@@ -33,7 +35,7 @@ git clone https://github.com/yourusername/task-progress-tracker.git
 
 2. Open the `index.html` file in your web browser.
 
-That's it! No server or build process required.
+That's it! No server, build process, or dependencies required.
 
 ## How to Use
 
@@ -42,25 +44,31 @@ That's it! No server or build process required.
 3. **Edit a task**: Click the edit button (✏️) next to a task name
 4. **Delete a task**: Click the delete button (🗑️) next to a task name
 5. **Navigate months**: Use the arrow buttons at the top to move between months
+6. **Filter tasks**: Use the "All Tasks" and "Single Task" buttons to change your view
+7. **Backup data**: Use the Export/Import buttons in the Data Management section
 
-## Privacy
+## Data Storage
 
-- All your data is stored locally in your browser using localStorage
-- No data is sent to any server
-- Your data remains private to your device
+- Your data is stored in your browser's IndexedDB database
+- IndexedDB data typically persists even when clearing cookies and browser cache
+- For additional safety, use the Export button to download a backup of your data
+- If needed, use the Import button to restore from a previously exported file
 
 ## Browser Support
 
 The app works in all modern browsers that support:
-- localStorage API
-- CSS Grid Layout
-- ES6 JavaScript features
+- IndexedDB (for data storage)
+- CSS Grid Layout (for the calendar visualization)
+- ES6+ JavaScript features
 
-## Development
+Supported browsers include:
+- Chrome 60+
+- Firefox 55+
+- Safari 11+
+- Edge 16+
+- Modern mobile browsers (iOS 11+, Android 5+)
 
-This project is built with plain HTML, CSS, and JavaScript, with no external dependencies.
-
-### Project Structure
+## Project Structure
 
 ```
 task-progress-tracker/
@@ -69,14 +77,27 @@ task-progress-tracker/
 │   └── styles.css
 ├── js/
 │   ├── app.js
-│   ├── storage.js
+│   ├── indexedDB-storage.js
 │   ├── taskManager.js
 │   └── ui.js
 ├── img/
+│   ├── icon-192.svg
+│   └── icon-512.svg
 ├── index.html
 ├── manifest.json
-└── service-worker.js
+├── service-worker.js
+├── LICENSE
+└── README.md
 ```
+
+## Technical Details
+
+- Built with vanilla JavaScript - no frameworks or libraries
+- Uses IndexedDB for persistent data storage
+- Async/await patterns for smooth user experience
+- CSS Grid for responsive layout and calendar visualization
+- CSS custom properties for easy theming
+- Progressive Web App capabilities for offline use
 
 ## Contributing
 

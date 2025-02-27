@@ -1,7 +1,8 @@
 /**
- * Task Manager
- * Handles business logic for tasks and their completions
+ * Modified TaskManager class to work with IndexedDB
+ * This file replaces your existing taskManager.js
  */
+
 class TaskManager {
     constructor(storage) {
       this.storage = storage;
@@ -12,18 +13,18 @@ class TaskManager {
   
     /**
      * Get all tasks
-     * @returns {Array} Array of task objects
+     * @returns {Promise<Array>} Promise that resolves with an array of task objects
      */
-    getAllTasks() {
+    async getAllTasks() {
       return this.storage.getAllTasks();
     }
   
     /**
      * Create a new task
      * @param {string} name - Name of the task
-     * @returns {Object} Created task
+     * @returns {Promise<Object>} Promise that resolves with the created task
      */
-    createTask(name) {
+    async createTask(name) {
       if (!name || name.trim() === '') {
         throw new Error('Task name cannot be empty');
       }
@@ -41,18 +42,18 @@ class TaskManager {
      * Update a task
      * @param {string} taskId - ID of the task to update
      * @param {Object} taskData - Updated task data
-     * @returns {Object|null} Updated task or null if not found
+     * @returns {Promise<Object|null>} Promise that resolves with the updated task or null if not found
      */
-    updateTask(taskId, taskData) {
+    async updateTask(taskId, taskData) {
       return this.storage.updateTask(taskId, taskData);
     }
   
     /**
      * Delete a task
      * @param {string} taskId - ID of the task to delete
-     * @returns {boolean} True if deleted, false if not found
+     * @returns {Promise<boolean>} Promise that resolves with true if deleted, false if not found
      */
-    deleteTask(taskId) {
+    async deleteTask(taskId) {
       return this.storage.deleteTask(taskId);
     }
   
@@ -60,13 +61,13 @@ class TaskManager {
      * Toggle completion level for a task on a specific date
      * @param {string} taskId - ID of the task
      * @param {string} dateStr - Date string in YYYY-MM-DD format
-     * @returns {number} New completion level
+     * @returns {Promise<number>} Promise that resolves with the new completion level
      */
-    toggleCompletionLevel(taskId, dateStr) {
-      const currentLevel = this.storage.getCompletionForDate(taskId, dateStr);
+    async toggleCompletionLevel(taskId, dateStr) {
+      const currentLevel = await this.storage.getCompletionForDate(taskId, dateStr);
       const newLevel = (currentLevel + 1) % 5; // Cycle through 0-4
       
-      this.storage.saveCompletion(taskId, dateStr, newLevel);
+      await this.storage.saveCompletion(taskId, dateStr, newLevel);
       return newLevel;
     }
   
@@ -74,9 +75,9 @@ class TaskManager {
      * Get completion level for a task on a specific date
      * @param {string} taskId - ID of the task
      * @param {string} dateStr - Date string in YYYY-MM-DD format
-     * @returns {number} Completion level (0-4)
+     * @returns {Promise<number>} Promise that resolves with the completion level (0-4)
      */
-    getCompletionLevel(taskId, dateStr) {
+    async getCompletionLevel(taskId, dateStr) {
       return this.storage.getCompletionForDate(taskId, dateStr);
     }
   
@@ -192,103 +193,70 @@ class TaskManager {
     }
   
     /**
-     * Get completion statistics for a task
-     * @param {string} taskId - ID of the task
-     * @returns {Object} Statistics object
-     */
-    getTaskStats(taskId) {
-      const task = this.storage.getTaskById(taskId);
-      
-      if (!task) {
-        return null;
-      }
-      
-      const completions = task.completions || {};
-      const completionDates = Object.keys(completions);
-      const completionValues = Object.values(completions);
-      
-      // Total completed days (level > 0)
-      const completedDays = completionValues.filter(level => level > 0).length;
-      
-      // Fully completed days (level === 4)
-      const fullyCompletedDays = completionValues.filter(level => level === 4).length;
-      
-      // Current streak
-      let currentStreak = 0;
-      const today = this.formatDate(new Date());
-      
-      // Check for days going backward from today
-      for (let i = 0; i < 1000; i++) { // Set a reasonable limit
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = this.formatDate(date);
-        
-        const level = completions[dateStr] || 0;
-        
-        if (level > 0) {
-          currentStreak++;
-        } else if (dateStr !== today) { // Allow today to be not completed yet
-          break;
-        }
-      }
-      
-      return {
-        totalDays: completionDates.length,
-        completedDays: completedDays,
-        fullyCompletedDays: fullyCompletedDays,
-        currentStreak: currentStreak,
-        completionRate: completionDates.length ? Math.round((completedDays / completionDates.length) * 100) : 0
-      };
-    }
-    /**
      * Add sample tasks for demonstration
-     * @returns {boolean} True if sample tasks were added
+     * @returns {Promise<boolean>} Promise that resolves with true if sample tasks were added
      */
-    addSampleTasks()
-    {
-        const existingTasks = this.getAllTasks();
-        
-        // Only add sample tasks if there are no existing tasks
-        if (existingTasks.length > 0) {
+    async addSampleTasks() {
+      const existingTasks = await this.getAllTasks();
+      
+      // Only add sample tasks if there are no existing tasks
+      if (existingTasks.length > 0) {
         return false;
-        }
-        
-        const sampleTasks = [
+      }
+      
+      const sampleTasks = [
         { name: 'Morning Exercise' },
         { name: 'Read for 30 minutes' },
         { name: 'Write in journal' },
         { name: 'Drink 8 glasses of water' },
         { name: 'Meditate' }
-        ];
-        
-        // Create sample tasks
-        sampleTasks.forEach(task => {
-        this.createTask(task.name);
-        });
-        
-        // Add some sample completions for the past few days
-        const today = new Date();
-        const createdTasks = this.getAllTasks();
-        
-        for (let i = 0; i < createdTasks.length; i++) {
+      ];
+      
+      // Create sample tasks
+      for (const taskData of sampleTasks) {
+        await this.createTask(taskData.name);
+      }
+      
+      // Add some sample completions for the past few days
+      const today = new Date();
+      const createdTasks = await this.getAllTasks();
+      
+      for (let i = 0; i < createdTasks.length; i++) {
         // Add random completions for the past 10 days
         for (let d = 0; d < 10; d++) {
-            const date = new Date();
-            date.setDate(today.getDate() - d);
-            const dateStr = this.formatDate(date);
-            
-            // Add a random completion level (more likely to be higher for recent days)
-            const randomLevel = Math.min(
+          const date = new Date();
+          date.setDate(today.getDate() - d);
+          const dateStr = this.formatDate(date);
+          
+          // Add a random completion level (more likely to be higher for recent days)
+          const randomLevel = Math.min(
             Math.floor(Math.random() * 5),
             Math.floor(Math.random() * (5 - Math.min(d/3, 3)))
-            );
-            
-            if (randomLevel > 0) {
-            this.storage.saveCompletion(createdTasks[i].id, dateStr, randomLevel);
-            }
+          );
+          
+          if (randomLevel > 0) {
+            await this.storage.saveCompletion(createdTasks[i].id, dateStr, randomLevel);
+          }
         }
-        }
-        
-        return true;
+      }
+      
+      return true;
     }
-}
+  
+    /**
+     * Export all data
+     * @returns {Promise<Object>} Promise that resolves with exported data
+     */
+    async exportData() {
+      return this.storage.exportData();
+    }
+  
+    /**
+     * Import data
+     * @param {Object} data - Data to import
+     * @returns {Promise<boolean>} Promise that resolves with true if successful
+     */
+    async importData(data) {
+      return this.storage.importData(data);
+    }
+  }

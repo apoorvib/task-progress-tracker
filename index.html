@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="css/normalize.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="img/icon-192.svg">
+    <link rel="apple-touch-icon" href="img/icon-192.svg">
     <meta name="theme-color" content="#4CAF50">
 </head>
 <body>
@@ -39,6 +41,20 @@
         </section>
 
         <section class="progress-panel">
+            <div class="view-controls">
+                <div class="view-selector">
+                    <button id="all-tasks-view" class="view-button active">All Tasks</button>
+                    <button id="single-task-view" class="view-button">Single Task</button>
+                </div>
+                <div id="task-selector-container" class="task-selector-container" style="display: none;">
+                    <label for="task-selector">Select Task:</label>
+                    <select id="task-selector" class="task-selector">
+                        <option value="">Select a task...</option>
+                        <!-- Task options will be added dynamically -->
+                    </select>
+                </div>
+            </div>
+            
             <div class="grid-container">
                 <div class="day-labels">
                     <div class="day-label">Mon</div>

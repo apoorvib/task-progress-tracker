@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <!-- Background -->
+  <rect width="192" height="192" rx="38.4" fill="#4CAF50" />
+  
+  <!-- Calendar grid lines -->
+  <g fill="none" stroke="#ffffff" stroke-width="3.84" opacity="0.6">
+    <rect x="38.4" y="57.6" width="115.2" height="96" rx="5.76" />
+    <line x1="38.4" y1="76.8" x2="153.6" y2="76.8" />
+    <line x1="67.2" y1="57.6" x2="67.2" y2="153.6" />
+    <line x1="96" y1="57.6" x2="96" y2="153.6" />
+    <line x1="124.8" y1="57.6" x2="124.8" y2="153.6" />
+  </g>
+  
+  <!-- Checkmark -->
+  <path d="57.6,96 86.4,124.8 134.4,67.2" 
+        fill="none" 
+        stroke="#ffffff" 
+        stroke-width="11.52" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+</svg>

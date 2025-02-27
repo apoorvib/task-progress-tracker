@@ -1,4 +1,4 @@
- /**
+/**
  * UI Controller
  * Handles DOM manipulation and UI interactions
  */
@@ -22,9 +22,14 @@ class UIController {
      * Initialize UI and event listeners
      */
     init() {
+      // Set initial view mode
+      this.viewMode = 'all'; // 'all' or 'single'
+      this.selectedTaskId = null;
+      
       // Render initial state
       this.renderCurrentMonth();
       this.renderTaskList();
+      this.updateTaskSelector();
       
       // Set up event listeners
       this.setupEventListeners();
@@ -62,7 +67,85 @@ class UIController {
           this.startEditingTask(taskId);
         } else if (e.target.classList.contains('btn-delete')) {
           this.deleteTask(taskId);
+        } else {
+          // When clicking on a task item (not on buttons), show single task view
+          this.showSingleTaskView(taskId);
         }
+      });
+      
+      // View toggle buttons
+      document.getElementById('all-tasks-view').addEventListener('click', () => {
+        this.showAllTasksView();
+      });
+      
+      document.getElementById('single-task-view').addEventListener('click', () => {
+        this.showSingleTaskView();
+      });
+      
+      // Task selector dropdown
+      document.getElementById('task-selector').addEventListener('change', (e) => {
+        const taskId = e.target.value;
+        if (taskId) {
+          this.selectedTaskId = taskId;
+          this.renderProgressGrid();
+        }
+      });
+    }
+    
+    /**
+     * Show all tasks view
+     */
+    showAllTasksView() {
+      this.viewMode = 'all';
+      document.getElementById('all-tasks-view').classList.add('active');
+      document.getElementById('single-task-view').classList.remove('active');
+      document.getElementById('task-selector-container').style.display = 'none';
+      this.renderProgressGrid();
+    }
+    
+    /**
+     * Show single task view
+     * @param {string} taskId - Optional task ID to select
+     */
+    showSingleTaskView(taskId = null) {
+      this.viewMode = 'single';
+      document.getElementById('all-tasks-view').classList.remove('active');
+      document.getElementById('single-task-view').classList.add('active');
+      document.getElementById('task-selector-container').style.display = 'flex';
+      
+      // If a task ID is provided, select it in the dropdown
+      if (taskId) {
+        this.selectedTaskId = taskId;
+        document.getElementById('task-selector').value = taskId;
+      }
+      
+      // If no task is selected yet, use the first one
+      if (!this.selectedTaskId && this.taskManager.getAllTasks().length > 0) {
+        this.selectedTaskId = this.taskManager.getAllTasks()[0].id;
+        document.getElementById('task-selector').value = this.selectedTaskId;
+      }
+      
+      this.renderProgressGrid();
+    }
+    
+    /**
+     * Update the task selector dropdown
+     */
+    updateTaskSelector() {
+      const taskSelector = document.getElementById('task-selector');
+      const tasks = this.taskManager.getAllTasks();
+      
+      // Clear current options (except the placeholder)
+      while (taskSelector.options.length > 1) {
+        taskSelector.remove(1);
+      }
+      
+      // Add task options
+      tasks.forEach(task => {
+        const option = document.createElement('option');
+        option.value = task.id;
+        option.textContent = task.name;
+        taskSelector.appendChild(option);
       });
     }
   
@@ -141,7 +224,7 @@ class UIController {
       this.progressGridElement.innerHTML = '';
       
       const days = this.taskManager.getDaysInMonth();
-      const tasks = this.taskManager.getAllTasks();
+      let tasks = this.taskManager.getAllTasks();
       
       if (tasks.length === 0) {
         const emptyMessage = document.createElement('div');
@@ -153,6 +236,11 @@ class UIController {
         emptyMessage.style.color = 'var(--text-secondary)';
         this.progressGridElement.appendChild(emptyMessage);
         return;
+      }
+      
+      // Filter tasks if in single task view
+      if (this.viewMode === 'single' && this.selectedTaskId) {
+        tasks = tasks.filter(task => task.id === this.selectedTaskId);
       }
       
       // Create cells for each task and day
@@ -181,6 +269,12 @@ class UIController {
             cell.className = 'progress-cell';
             cell.dataset.date = day.dateStr;
             cell.dataset.taskId = task.id;
+            
+            // Add date number to cell
+            const dateLabel = document.createElement('span');
+            dateLabel.className = 'cell-date';
+            dateLabel.textContent = day.day;
+            cell.appendChild(dateLabel);
             
             // Check completion level
             const level = this.taskManager.getCompletionLevel(task.id, day.dateStr);
@@ -251,6 +345,7 @@ class UIController {
         
         // Update UI
         this.renderTaskList();
+        this.updateTaskSelector();
         this.renderProgressGrid();
       } catch (error) {
         alert(`Error: ${error.message}`);
@@ -318,8 +413,23 @@ class UIController {
       if (confirmDelete) {
         this.taskManager.deleteTask(taskId);
         
+        // If the deleted task was the selected task in single view, reset selection
+        if (this.selectedTaskId === taskId) {
+          this.selectedTaskId = null;
+          
+          // If there are other tasks, select the first one
+          const remainingTasks = this.taskManager.getAllTasks();
+          if (remainingTasks.length > 0) {
+            this.selectedTaskId = remainingTasks[0].id;
+          } else if (this.viewMode === 'single') {
+            // Switch back to all tasks view if no tasks remain
+            this.showAllTasksView();
+          }
+        }
+        
         // Update UI
         this.renderTaskList();
+        this.updateTaskSelector();
         this.renderProgressGrid();
         
         // Cancel editing if deleting the task being edited

@@ -18,6 +18,13 @@
       // Initialize task manager with storage service
       const taskManager = new TaskManager(storage);
       
+      // Add sample tasks if this is the first time using the app
+      const firstRun = localStorage.getItem('taskProgressFirstRun') !== 'false';
+      if (firstRun) {
+        taskManager.addSampleTasks();
+        localStorage.setItem('taskProgressFirstRun', 'false');
+      }
+      
       // Initialize UI controller with task manager
       const uiController = new UIController(taskManager);
       

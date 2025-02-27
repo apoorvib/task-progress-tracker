@@ -30,7 +30,7 @@ You can try the app directly by visiting [GitHub Pages link](#).
 1. Download the [latest release](https://github.com/yourusername/task-progress-tracker/releases) or clone this repository:
 
 ```
-git clone https://github.com/yourusername/task-progress-tracker.git
+git clone https://github.com/apoorvib/task-progress-tracker.git
 ```
 
 2. Open the `index.html` file in your web browser.

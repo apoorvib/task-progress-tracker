@@ -6,14 +6,25 @@ class TaskStorage {
     constructor() {
       this.TASKS_KEY = 'taskProgress_tasks';
       this.initializeStorage();
+      console.log('TaskStorage initialized');
+      
+      // Log current storage state
+      const tasks = this.getAllTasks();
+      console.log(`Found ${tasks.length} tasks in storage`);
     }
   
     /**
      * Initialize storage if empty
      */
     initializeStorage() {
-      if (!localStorage.getItem(this.TASKS_KEY)) {
-        localStorage.setItem(this.TASKS_KEY, JSON.stringify([]));
+      try {
+        if (!localStorage.getItem(this.TASKS_KEY)) {
+          console.log('Initializing empty tasks array in localStorage');
+          localStorage.setItem(this.TASKS_KEY, JSON.stringify([]));
+        }
+      } catch (error) {
+        console.error('Error initializing storage:', error);
+        throw new Error('Failed to initialize storage');
       }
     }
   
@@ -23,7 +34,20 @@ class TaskStorage {
      */
     getAllTasks() {
       try {
-        return JSON.parse(localStorage.getItem(this.TASKS_KEY)) || [];
+        const tasksJSON = localStorage.getItem(this.TASKS_KEY);
+        if (!tasksJSON) {
+          console.warn('No tasks found in localStorage, returning empty array');
+          return [];
+        }
+        
+        const tasks = JSON.parse(tasksJSON);
+        if (!Array.isArray(tasks)) {
+          console.warn('Tasks data is not an array, resetting to empty array');
+          localStorage.setItem(this.TASKS_KEY, JSON.stringify([]));
+          return [];
+        }
+        
+        return tasks;
       } catch (error) {
         console.error('Error retrieving tasks from storage:', error);
         return [];
@@ -37,6 +61,7 @@ class TaskStorage {
      */
     saveTask(task) {
       try {
+        console.log('Saving task:', task);
         const tasks = this.getAllTasks();
         
         // Generate a unique ID if not provided
@@ -54,12 +79,20 @@ class TaskStorage {
           task.completions = {};
         }
         
+        // Add task to array
         tasks.push(task);
-        localStorage.setItem(this.TASKS_KEY, JSON.stringify(tasks));
+        
+        // Save to localStorage
+        const result = this.saveTasksToStorage(tasks);
+        if (!result) {
+          throw new Error('Failed to save tasks to localStorage');
+        }
+        
+        console.log('Task saved successfully, ID:', task.id);
         return task;
       } catch (error) {
         console.error('Error saving task:', error);
-        throw new Error('Failed to save task');
+        throw new Error('Failed to save task: ' + error.message);
       }
     }
   
@@ -71,10 +104,12 @@ class TaskStorage {
      */
     updateTask(taskId, updatedTask) {
       try {
+        console.log('Updating task:', taskId, updatedTask);
         const tasks = this.getAllTasks();
         const index = tasks.findIndex(task => task.id === taskId);
         
         if (index === -1) {
+          console.warn('Task not found for update:', taskId);
           return null;
         }
         
@@ -82,14 +117,25 @@ class TaskStorage {
         updatedTask.id = taskId;
         updatedTask.created = tasks[index].created;
         
+        // Preserve completions if not provided in update
+        if (!updatedTask.completions && tasks[index].completions) {
+          updatedTask.completions = tasks[index].completions;
+        }
+        
         // Update the task
         tasks[index] = { ...tasks[index], ...updatedTask };
-        localStorage.setItem(this.TASKS_KEY, JSON.stringify(tasks));
         
+        // Save to localStorage
+        const result = this.saveTasksToStorage(tasks);
+        if (!result) {
+          throw new Error('Failed to save updated tasks to localStorage');
+        }
+        
+        console.log('Task updated successfully');
         return tasks[index];
       } catch (error) {
         console.error('Error updating task:', error);
-        throw new Error('Failed to update task');
+        throw new Error('Failed to update task: ' + error.message);
       }
     }
   
@@ -100,18 +146,26 @@ class TaskStorage {
      */
     deleteTask(taskId) {
       try {
+        console.log('Deleting task:', taskId);
         const tasks = this.getAllTasks();
         const filteredTasks = tasks.filter(task => task.id !== taskId);
         
         if (filteredTasks.length === tasks.length) {
+          console.warn('Task not found for deletion:', taskId);
           return false; // Task not found
         }
         
-        localStorage.setItem(this.TASKS_KEY, JSON.stringify(filteredTasks));
+        // Save to localStorage
+        const result = this.saveTasksToStorage(filteredTasks);
+        if (!result) {
+          throw new Error('Failed to save tasks after deletion');
+        }
+        
+        console.log('Task deleted successfully');
         return true;
       } catch (error) {
         console.error('Error deleting task:', error);
-        throw new Error('Failed to delete task');
+        throw new Error('Failed to delete task: ' + error.message);
       }
     }
   
@@ -123,9 +177,15 @@ class TaskStorage {
     getTaskById(taskId) {
       try {
         const tasks = this.getAllTasks();
-        return tasks.find(task => task.id === taskId) || null;
+        const task = tasks.find(task => task.id === taskId);
+        
+        if (!task) {
+          console.warn('Task not found by ID:', taskId);
+        }
+        
+        return task || null;
       } catch (error) {
-        console.error('Error retrieving task:', error);
+        console.error('Error retrieving task by ID:', error);
         return null;
       }
     }
@@ -139,9 +199,11 @@ class TaskStorage {
      */
     saveCompletion(taskId, date, level) {
       try {
+        console.log('Saving completion:', taskId, date, level);
         const task = this.getTaskById(taskId);
         
         if (!task) {
+          console.warn('Task not found for saving completion:', taskId);
           return null;
         }
         
@@ -156,7 +218,7 @@ class TaskStorage {
         return this.updateTask(taskId, task);
       } catch (error) {
         console.error('Error saving completion:', error);
-        throw new Error('Failed to save completion status');
+        throw new Error('Failed to save completion: ' + error.message);
       }
     }
   
@@ -167,13 +229,35 @@ class TaskStorage {
      * @returns {number} Completion level (0-4), defaults to 0
      */
     getCompletionForDate(taskId, date) {
-      const task = this.getTaskById(taskId);
-      
-      if (!task || !task.completions || !task.completions[date]) {
-        return 0; // Default to level 0 (incomplete)
+      try {
+        const task = this.getTaskById(taskId);
+        
+        if (!task || !task.completions || !task.completions[date]) {
+          return 0; // Default to level 0 (incomplete)
+        }
+        
+        return task.completions[date];
+      } catch (error) {
+        console.error('Error getting completion for date:', error);
+        return 0; // Default to level 0 on error
       }
-      
-      return task.completions[date];
+    }
+  
+    /**
+     * Save tasks array to localStorage
+     * @private
+     * @param {Array} tasks - Array of task objects
+     * @returns {boolean} True if saved successfully
+     */
+    saveTasksToStorage(tasks) {
+      try {
+        const tasksJSON = JSON.stringify(tasks);
+        localStorage.setItem(this.TASKS_KEY, tasksJSON);
+        return true;
+      } catch (error) {
+        console.error('Error saving tasks to localStorage:', error);
+        return false;
+      }
     }
   
     /**

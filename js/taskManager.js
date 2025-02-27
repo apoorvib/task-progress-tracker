@@ -240,4 +240,55 @@ class TaskManager {
         completionRate: completionDates.length ? Math.round((completedDays / completionDates.length) * 100) : 0
       };
     }
-  }
+    /**
+     * Add sample tasks for demonstration
+     * @returns {boolean} True if sample tasks were added
+     */
+    addSampleTasks()
+    {
+        const existingTasks = this.getAllTasks();
+        
+        // Only add sample tasks if there are no existing tasks
+        if (existingTasks.length > 0) {
+        return false;
+        }
+        
+        const sampleTasks = [
+        { name: 'Morning Exercise' },
+        { name: 'Read for 30 minutes' },
+        { name: 'Write in journal' },
+        { name: 'Drink 8 glasses of water' },
+        { name: 'Meditate' }
+        ];
+        
+        // Create sample tasks
+        sampleTasks.forEach(task => {
+        this.createTask(task.name);
+        });
+        
+        // Add some sample completions for the past few days
+        const today = new Date();
+        const createdTasks = this.getAllTasks();
+        
+        for (let i = 0; i < createdTasks.length; i++) {
+        // Add random completions for the past 10 days
+        for (let d = 0; d < 10; d++) {
+            const date = new Date();
+            date.setDate(today.getDate() - d);
+            const dateStr = this.formatDate(date);
+            
+            // Add a random completion level (more likely to be higher for recent days)
+            const randomLevel = Math.min(
+            Math.floor(Math.random() * 5),
+            Math.floor(Math.random() * (5 - Math.min(d/3, 3)))
+            );
+            
+            if (randomLevel > 0) {
+            this.storage.saveCompletion(createdTasks[i].id, dateStr, randomLevel);
+            }
+        }
+        }
+        
+        return true;
+    }
+}

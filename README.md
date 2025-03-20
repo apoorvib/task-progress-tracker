@@ -17,13 +17,13 @@ A powerful, offline-capable web application for tracking your daily tasks and ha
 
 ## Live Demo
 
-You can try the app directly by visiting [GitHub Pages link](#).
+This project isn't currently hosted online. Once you deploy it, you can add the link here.
 
 ## Installation
 
 ### Option 1: Use directly in browser
 
-1. Go to the [GitHub Pages demo](#) 
+1. If you've deployed the app, visit its URL
 2. Start using the app immediately - no installation required!
 3. For mobile devices, you can install it as a Progressive Web App by:
    - On Android: Tap the menu button and select "Add to Home Screen"
@@ -31,10 +31,10 @@ You can try the app directly by visiting [GitHub Pages link](#).
 
 ### Option 2: Download and run locally
 
-1. Download the [latest release](https://github.com/yourusername/task-progress-tracker/releases) or clone this repository:
+1. Download the source code or clone this repository:
 
 ```
-git clone https://github.com/yourusername/task-progress-tracker.git
+git clone https://github.com/your-username/task-progress-tracker.git
 ```
 
 2. Open the `index.html` file in your web browser.

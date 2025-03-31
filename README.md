@@ -17,7 +17,7 @@ A powerful, offline-capable web application for tracking your daily tasks and ha
 
 ## Live Demo
 
-This project isn't currently hosted online. Once you deploy it, you can add the link here.
+This project isn't currently hosted online.
 
 ## Installation
 
@@ -34,7 +34,7 @@ This project isn't currently hosted online. Once you deploy it, you can add the 
 1. Download the source code or clone this repository:
 
 ```
-git clone https://github.com/your-username/task-progress-tracker.git
+git clone https://github.com/apoorvib/task-progress-tracker.git
 ```
 
 2. Open the `index.html` file in your web browser.

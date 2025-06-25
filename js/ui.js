@@ -1,6 +1,6 @@
 /**
  * Modified UIController class to work with async IndexedDB storage
- * This file replaces your existing ui.js
+ * This file replaces your existing ui.js with FIXED import/export functionality
  */
 
 class UIController {
@@ -187,6 +187,7 @@ class UIController {
               <label for="import-file" class="btn-secondary">Import Data</label>
               <input type="file" id="import-file" accept=".json" style="display: none;">
             </div>
+            <button id="debug-export-import" class="btn-secondary" style="font-size: 0.8em;">Debug</button>
           </div>
           <p class="data-info">Data is stored in IndexedDB and persists even when clearing browser cache.</p>
         `;
@@ -197,6 +198,7 @@ class UIController {
         // Add event listeners
         const exportBtn = document.getElementById('export-data');
         const importFileInput = document.getElementById('import-file');
+        const debugBtn = document.getElementById('debug-export-import');
         
         if (exportBtn) {
           exportBtn.addEventListener('click', async () => {
@@ -208,7 +210,15 @@ class UIController {
           importFileInput.addEventListener('change', async (e) => {
             if (e.target.files.length > 0) {
               await this.importData(e.target.files[0]);
+              // Clear the input so the same file can be selected again
+              e.target.value = '';
             }
+          });
+        }
+        
+        if (debugBtn) {
+          debugBtn.addEventListener('click', async () => {
+            await this.debugExportImport();
           });
         }
         
@@ -224,8 +234,9 @@ class UIController {
           }
           .data-buttons {
             display: flex;
-            gap: 16px;
+            gap: 8px;
             margin-bottom: 8px;
+            flex-wrap: wrap;
           }
           .btn-secondary {
             background-color: #f0f0f0;
@@ -235,6 +246,7 @@ class UIController {
             border-radius: 4px;
             cursor: pointer;
             font-weight: 500;
+            font-size: 0.875rem;
           }
           .btn-secondary:hover {
             background-color: #e0e0e0;
@@ -256,11 +268,20 @@ class UIController {
      */
     async exportData() {
       try {
+        console.log('Starting data export...');
+        
         // Get data from the task manager
         const exportData = await this.taskManager.exportData();
+        console.log('Export data received:', exportData);
+        
+        // Validate export data structure
+        if (!exportData || !Array.isArray(exportData.tasks)) {
+          throw new Error('Invalid export data structure');
+        }
         
         // Convert to JSON string
         const dataStr = JSON.stringify(exportData, null, 2);
+        console.log('Data serialized, length:', dataStr.length);
         
         // Create a blob and download link
         const blob = new Blob([dataStr], {type: 'application/json'});
@@ -280,7 +301,7 @@ class UIController {
         }, 100);
         
         console.log('Data exported successfully');
-        alert('Data exported successfully!');
+        alert(`Data exported successfully! (${exportData.tasks.length} tasks)`);
       } catch (error) {
         console.error('Error exporting data:', error);
         alert('Error exporting data: ' + error.message);
@@ -288,7 +309,7 @@ class UIController {
     }
     
     /**
-     * Import data from a JSON file
+     * Import data from a JSON file - FIXED VERSION
      * @param {File} file - The JSON file to import
      */
     async importData(file) {
@@ -297,26 +318,45 @@ class UIController {
         return;
       }
       
+      console.log('Starting data import from file:', file.name);
+      
       const reader = new FileReader();
       
       reader.onload = async (event) => {
         try {
+          console.log('File read successfully, parsing JSON...');
           const importedData = JSON.parse(event.target.result);
+          console.log('Imported data structure:', importedData);
           
-          // Validate the imported data
+          // Validate the imported data structure
+          if (!importedData || typeof importedData !== 'object') {
+            throw new Error('Invalid backup file: File is not a valid JSON object');
+          }
+          
           if (!Array.isArray(importedData.tasks)) {
             throw new Error('Invalid backup file: Tasks data is missing or invalid');
           }
           
+          // Optional: Validate version compatibility
+          if (importedData.version && importedData.version !== '1.0') {
+            console.warn('Import file version mismatch. Attempting import anyway...');
+          }
+          
+          console.log(`Validation passed. Found ${importedData.tasks.length} tasks to import.`);
+          
           // Confirm import
-          if (confirm('This will replace your current data. Continue?')) {
-            // Import the data
-            await this.taskManager.importData(importedData.tasks);
+          if (confirm(`This will replace your current data with ${importedData.tasks.length} tasks. Continue?`)) {
+            console.log('User confirmed import, proceeding...');
+            
+            // FIXED: Import the FULL data object, not just the tasks array
+            await this.taskManager.importData(importedData);
             
             alert('Data imported successfully! The page will now reload.');
             
             // Reload the page to show the imported data
             window.location.reload();
+          } else {
+            console.log('Import cancelled by user');
           }
         } catch (error) {
           console.error('Error importing data:', error);
@@ -325,10 +365,66 @@ class UIController {
       };
       
       reader.onerror = () => {
+        console.error('Error reading file');
         alert('Error reading the file');
       };
       
       reader.readAsText(file);
+    }
+    
+    /**
+     * Debug function to test export/import cycle
+     */
+    async debugExportImport() {
+      try {
+        console.log('=== DEBUGGING EXPORT/IMPORT ===');
+        
+        // Test export
+        const exportedData = await this.taskManager.exportData();
+        console.log('Exported data structure:', exportedData);
+        console.log('Tasks count:', exportedData.tasks?.length || 0);
+        console.log('Export data keys:', Object.keys(exportedData));
+        
+        if (exportedData.tasks) {
+          console.log('First task sample:', exportedData.tasks[0]);
+        }
+        
+        // Simulate import validation
+        if (!Array.isArray(exportedData.tasks)) {
+          console.error('❌ VALIDATION FAILED: exportedData.tasks is not an array');
+          alert('Debug failed: Export data structure is invalid');
+          return;
+        }
+        
+        // Test the validation logic that will be used in import
+        const testValidation = (data) => {
+          if (!data || typeof data !== 'object') {
+            return 'Not an object';
+          }
+          if (!Array.isArray(data.tasks)) {
+            return 'Missing or invalid tasks array';
+          }
+          return 'Valid';
+        };
+        
+        const validationResult = testValidation(exportedData);
+        console.log('Validation result:', validationResult);
+        
+        if (validationResult === 'Valid') {
+          console.log('✅ Export/Import validation: PASSED');
+          console.log('✅ Data structure is compatible');
+          alert(`Debug successful!\n- Tasks: ${exportedData.tasks.length}\n- Structure: Valid\n- Ready for import/export`);
+        } else {
+          console.error('❌ Validation failed:', validationResult);
+          alert('Debug failed: ' + validationResult);
+        }
+        
+        return exportedData;
+      } catch (error) {
+        console.error('Debug export/import failed:', error);
+        alert('Debug failed: ' + error.message);
+        return null;
+      }
     }
     
     /**

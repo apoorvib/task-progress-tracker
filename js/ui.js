@@ -27,7 +27,7 @@ class UIController {
       this.editingTaskId = null;
       
       // Initialize UI and event listeners
-      this.init();
+      this.ready = this.init();
     }
   
     /**
@@ -40,6 +40,7 @@ class UIController {
         // Set initial view mode
         this.viewMode = 'all'; // 'all' or 'single'
         this.selectedTaskId = null;
+        await this.loadViewSettings();
         
         // Render initial state
         await this.renderCurrentMonth();
@@ -153,6 +154,7 @@ class UIController {
             console.log('Task selector changed:', taskId);
             if (taskId) {
               this.selectedTaskId = taskId;
+              await this.taskManager.storage.saveSetting('selectedTaskId', taskId);
               await this.renderProgressGrid();
             }
           });
@@ -187,9 +189,7 @@ class UIController {
               <label for="import-file" class="btn-secondary">Import Data</label>
               <input type="file" id="import-file" accept=".json" style="display: none;">
             </div>
-            <button id="debug-export-import" class="btn-secondary" style="font-size: 0.8em;">Debug</button>
           </div>
-          <p class="data-info">Data is stored in IndexedDB and persists even when clearing browser cache.</p>
         `;
         
         // Append to the tasks panel
@@ -345,7 +345,7 @@ class UIController {
           console.log(`Validation passed. Found ${importedData.tasks.length} tasks to import.`);
           
           // Confirm import
-          if (confirm(`This will replace your current data with ${importedData.tasks.length} tasks. Continue?`)) {
+          if (confirm(`Import ${importedData.tasks.length} tasks? Existing tasks will be kept; incompatible duplicates will cancel the import.`)) {
             console.log('User confirmed import, proceeding...');
             
             // FIXED: Import the FULL data object, not just the tasks array
@@ -448,6 +448,7 @@ class UIController {
       document.getElementById('all-tasks-view').classList.add('active');
       document.getElementById('single-task-view').classList.remove('active');
       document.getElementById('task-selector-container').style.display = 'none';
+      await this.taskManager.storage.saveSetting('viewMode', 'all');
       await this.renderProgressGrid();
     }
     
@@ -477,7 +478,18 @@ class UIController {
         }
       }
       
+      await this.taskManager.storage.saveSetting('viewMode', 'single');
+      await this.taskManager.storage.saveSetting('selectedTaskId', this.selectedTaskId);
       await this.renderProgressGrid();
+    }
+
+    async loadViewSettings() {
+      const storage = this.taskManager.storage;
+      this.viewMode = await storage.getSetting('viewMode') === 'single' ? 'single' : 'all';
+      this.selectedTaskId = await storage.getSetting('selectedTaskId');
+      document.getElementById('all-tasks-view').classList.toggle('active', this.viewMode === 'all');
+      document.getElementById('single-task-view').classList.toggle('active', this.viewMode === 'single');
+      document.getElementById('task-selector-container').style.display = this.viewMode === 'single' ? 'flex' : 'none';
     }
     
     /**
@@ -506,6 +518,8 @@ class UIController {
           option.textContent = task.name;
           taskSelector.appendChild(option);
         });
+        if (!tasks.some(task => task.id === this.selectedTaskId)) this.selectedTaskId = tasks[0]?.id || null;
+        taskSelector.value = this.selectedTaskId || '';
         
         console.log('Task selector updated with', tasks.length, 'tasks');
       } catch (error) {
@@ -541,7 +555,9 @@ class UIController {
           return;
         }
         
+        const generation = this.listGeneration = (this.listGeneration || 0) + 1;
         const tasks = await this.taskManager.getAllTasks();
+        if (generation !== this.listGeneration) return;
         this.taskListElement.innerHTML = '';
         
         if (tasks.length === 0) {
@@ -549,6 +565,7 @@ class UIController {
           emptyMessage.className = 'empty-message';
           emptyMessage.textContent = 'No tasks yet. Add your first task!';
           this.taskListElement.appendChild(emptyMessage);
+          await this.updateTaskSelector();
           return;
         }
         
@@ -590,7 +607,7 @@ class UIController {
           
           // Add mini progress indicator (last 7 days)
           this.taskListElement.appendChild(taskItem);
-          await this.renderMiniProgress(taskItem.querySelector('.task-progress-mini'), task.id);
+          this.renderMiniProgress(taskItem.querySelector('.task-progress-mini'), task.id, task);
         }
         
         await this.updateTaskSelector();
@@ -606,13 +623,14 @@ class UIController {
      * @param {HTMLElement} container - Container element
      * @param {string} taskId - Task ID
      */
-    async renderMiniProgress(container, taskId) {
+    async renderMiniProgress(container, taskId, task = null) {
       try {
         if (!container) {
           console.error('Mini progress container not found');
           return;
         }
         
+        task = task || await this.taskManager.storage.getTaskById(taskId);
         container.innerHTML = '';
         
         // Get last 7 days
@@ -623,7 +641,7 @@ class UIController {
           date.setDate(today.getDate() - i);
           const dateStr = this.taskManager.formatDate(date);
           
-          const level = await this.taskManager.getCompletionLevel(taskId, dateStr);
+          const level = task?.completions[dateStr] || 0;
           
           const cell = document.createElement('div');
           cell.className = `mini-cell level-${level}`;
@@ -645,10 +663,11 @@ class UIController {
           return;
         }
         
-        this.progressGridElement.innerHTML = '';
-        
+        const generation = this.gridGeneration = (this.gridGeneration || 0) + 1;
         const days = this.taskManager.getDaysInMonth();
         let tasks = await this.taskManager.getAllTasks();
+        if (generation !== this.gridGeneration) return;
+        this.progressGridElement.innerHTML = '';
         
         if (tasks.length === 0) {
           const emptyMessage = document.createElement('div');
@@ -705,7 +724,7 @@ class UIController {
               cell.appendChild(dateLabel);
               
               // Check completion level
-              const level = await this.taskManager.getCompletionLevel(task.id, day.dateStr);
+              const level = task.completions[day.dateStr] || 0;
               cell.classList.add(`level-${level}`);
               
               // Add today indicator
@@ -740,13 +759,13 @@ class UIController {
       try {
         console.log('Toggling task completion:', taskId, dateStr);
         
-        // Remove old level class
+        const newLevel = await this.taskManager.toggleCompletionLevel(taskId, dateStr);
+        // Change the visible level only after the local transaction commits.
         for (let i = 0; i <= 4; i++) {
           cellElement.classList.remove(`level-${i}`);
         }
         
         // Update level in data and UI
-        const newLevel = await this.taskManager.toggleCompletionLevel(taskId, dateStr);
         console.log('New completion level:', newLevel);
         cellElement.classList.add(`level-${newLevel}`);
         
@@ -757,6 +776,7 @@ class UIController {
         }
       } catch (error) {
         console.error('Error toggling task completion:', error);
+        alert(`Not saved: ${error.message}`);
       }
     }
   
@@ -913,6 +933,7 @@ class UIController {
         }
       } catch (error) {
         console.error('Error deleting task:', error);
+        alert(`Not saved: ${error.message}`);
       }
     }
   }

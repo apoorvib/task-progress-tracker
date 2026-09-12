@@ -64,11 +64,8 @@ class TaskManager {
      * @returns {Promise<number>} Promise that resolves with the new completion level
      */
     async toggleCompletionLevel(taskId, dateStr) {
-      const currentLevel = await this.storage.getCompletionForDate(taskId, dateStr);
-      const newLevel = (currentLevel + 1) % 5; // Cycle through 0-4
-      
-      await this.storage.saveCompletion(taskId, dateStr, newLevel);
-      return newLevel;
+      const task = await this.storage.toggleCompletion(taskId, dateStr);
+      return task.completions[dateStr];
     }
   
     /**

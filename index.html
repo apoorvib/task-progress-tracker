@@ -8,8 +8,8 @@
     <link rel="stylesheet" href="css/normalize.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="img/icon-192.svg">
-    <link rel="apple-touch-icon" href="img/icon-192.svg">
+    <link rel="icon" type="image/svg+xml" href="img/icon-192-svg.svg">
+    <link rel="apple-touch-icon" href="img/icon-192-svg.svg">
     <meta name="theme-color" content="#4CAF50">
 </head>
 <body>
@@ -21,13 +21,21 @@
             <button id="next-month" aria-label="Next month">&gt;</button>
         </div>
     </header>
+    <div class="sync-band">
+        <div class="sync-controls">
+            <span id="sync-status" role="status" aria-live="polite">Opening local storage...</span>
+            <button id="sync-now" class="icon-button" title="Sync now" aria-label="Sync now"><i data-lucide="refresh-cw"></i></button>
+            <button id="review-conflicts" class="btn-secondary" hidden>Review conflicts</button>
+        </div>
+        <p id="sync-warning" hidden>Pending changes can be lost if browser site data is cleared.</p>
+    </div>
 
     <main class="app-container">
         <section class="tasks-panel">
             <div class="task-form-container">
                 <h3>Add New Task</h3>
                 <form id="task-form">
-                    <input type="text" id="task-name" placeholder="Enter task name" required>
+                    <input type="text" id="task-name" placeholder="Enter task name" maxlength="500" required>
                     <button type="submit" class="btn btn-primary">Add Task</button>
                 </form>
             </div>
@@ -100,7 +108,6 @@
 
     <footer>
         <p>Task Progress Tracker - <span id="current-year">2025</span></p>
-        <p><small>Works offline. Your data is stored in IndexedDB and persists even when clearing browser cache.</small></p>
     </footer>
 
     <template id="task-item-template">
@@ -116,14 +123,19 @@
         </li>
     </template>
 
-    <!-- IMPORTANT: Load scripts in correct order -->
-    <script src="js/indexedDB-storage.js"></script>
+    <dialog id="conflict-dialog" aria-labelledby="conflict-title">
+        <div class="dialog-heading">
+            <h2 id="conflict-title">Conflicting changes</h2>
+            <button id="close-conflicts" class="icon-button" title="Close" aria-label="Close"><i data-lucide="x"></i></button>
+        </div>
+        <div id="conflict-list"></div>
+    </dialog>
+    <script src="node_modules/lucide/dist/umd/lucide.js"></script>
+    <script src="js/sync-protocol.js"></script>
+    <script src="js/sync-storage.js"></script>
+    <script src="js/sync-ui.js"></script>
     <script src="js/taskManager.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/app.js"></script>
-    <script>
-        // Update current year in footer
-        document.getElementById('current-year').textContent = new Date().getFullYear();
-    </script>
 </body>
 </html>

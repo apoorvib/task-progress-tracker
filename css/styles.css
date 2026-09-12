@@ -1,4 +1,31 @@
 /* Task Progress Tracker Styles */
+.sync-band { max-width: 1200px; margin: 0 auto; padding: 12px 24px 0; }
+.sync-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 36px; }
+#sync-status { font-size: 14px; overflow-wrap: anywhere; }
+#sync-status[data-state="saved"] { color: #216e39; }
+#sync-status[data-state="pending"] { color: #805400; }
+#sync-status[data-state="error"] { color: #b42318; }
+#sync-warning { color: #805400; font-size: 13px; margin: 4px 0; }
+.icon-button { width: 36px; height: 36px; flex: 0 0 36px; display: inline-flex; align-items: center; justify-content: center; background: white; border: 1px solid #cdd1d5; border-radius: 4px; cursor: pointer; }
+.icon-button svg { width: 18px; height: 18px; }
+button:disabled { opacity: 0.55; cursor: default; }
+[hidden] { display: none !important; }
+dialog { width: min(720px, calc(100% - 24px)); max-height: calc(100% - 32px); padding: 20px; border: 1px solid #cdd1d5; border-radius: 8px; }
+dialog::backdrop { background: #0007; }
+.dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.dialog-heading h2 { font-size: 20px; margin: 0; }
+#conflict-list section { border-top: 1px solid #ddd; margin-top: 16px; padding-top: 16px; }
+#conflict-list h3 { font-size: 16px; overflow-wrap: anywhere; }
+#conflict-list table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; }
+#conflict-list th, #conflict-list td { text-align: left; vertical-align: top; border-bottom: 1px solid #eee; padding: 8px; overflow-wrap: anywhere; }
+.conflict-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.tasks-panel, .progress-panel { min-width: 0; }
+.task-name, .task-row-label { overflow-wrap: anywhere; }
+.task-actions { flex-shrink: 0; }
+.legend-colors { flex-wrap: wrap; gap: 6px 0; }
+.task-selector { min-width: 0 !important; max-width: 100%; }
+.task-selector-container { min-width: 0; max-width: 100%; }
+
 :root {
   /* Color palette */
   --primary-color: #4CAF50;
